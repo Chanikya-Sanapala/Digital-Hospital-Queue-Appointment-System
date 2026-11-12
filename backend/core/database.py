@@ -11,21 +11,30 @@ class Database:
 db_instance = Database()
 
 async def connect_to_mongo():
+    if not settings.MONGODB_URI:
+        logger.critical("CRITICAL: MONGODB_URI is empty! Please add MONGODB_URI under 'Environment' in your Render dashboard.")
+        raise ValueError("MONGODB_URI is not configured in Environment Variables.")
+
     logger.info("Connecting to MongoDB Atlas...")
-    db_instance.client = AsyncIOMotorClient(
-        settings.MONGODB_URI,
-        serverSelectionTimeoutMS=5000,
-        maxPoolSize=50,
-        minPoolSize=10
-    )
-    db_instance.db = db_instance.client[settings.DATABASE_NAME]
-    
-    # Ping database to verify connection
-    await db_instance.client.admin.command('ping')
-    logger.info("Connected successfully to MongoDB Atlas!")
-    
-    # Initialize indexes
-    await init_indexes()
+    try:
+        db_instance.client = AsyncIOMotorClient(
+            settings.MONGODB_URI,
+            serverSelectionTimeoutMS=10000,
+            maxPoolSize=50,
+            minPoolSize=10
+        )
+        db_instance.db = db_instance.client[settings.DATABASE_NAME]
+        
+        # Ping database to verify connection
+        await db_instance.client.admin.command('ping')
+        logger.info("Connected successfully to MongoDB Atlas!")
+        
+        # Initialize indexes
+        await init_indexes()
+    except Exception as e:
+        logger.error(f"MongoDB connection failed: {e}")
+        logger.error("HINT: Ensure MongoDB Atlas -> Network Access has '0.0.0.0/0' (Allow access from anywhere) enabled.")
+        raise e
 
 async def close_mongo_connection():
     if db_instance.client:
