@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../services/api';
 import { Lock, AlertCircle, ShieldAlert, X } from 'lucide-react';
 
 interface GoogleAuthButtonProps {
@@ -82,7 +83,10 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
         navigate('/customer', { replace: true });
       }
     } catch (err: any) {
-      const msg = err.response?.data?.detail || 'Google authentication failed. Please try again.';
+      const msg = err.response?.data?.detail 
+        || (err.message === 'Network Error' ? `Cannot connect to API server at ${api.defaults.baseURL}. Please ensure backend is running.` : null)
+        || err.message
+        || 'Google authentication failed. Please try again.';
       setError(msg);
       if (onError) onError(msg);
     } finally {
